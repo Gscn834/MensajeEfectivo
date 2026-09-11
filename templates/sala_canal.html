@@ -1,10 +1,213 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canal: #{{ canal.nombre }} | Mensaje Efectivo</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e3a8a;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --success: #10b981;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Cabecera del Canal */
+        .chat-header {
+            background-color: var(--bg-card);
+            padding: 15px 30px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .back-btn {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover { background-color: var(--border); color: #fff; }
+
+        .context-badge {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+            background-color: {% if canal.tipo_contexto == 'FORMAL' %}#3b82f6{% else %}#f59e0b{% endif %};
+        }
+
+        /* Área de Mensajes (Técnica de Escucha Activa visible aquí) */
+        .chat-messages {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+
+        .message-mine {
+            align-self: flex-end;
+            background-color: rgba(37, 99, 235, 0.1);
+            border-color: var(--primary);
+        }
+
+        .msg-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .msg-author { font-weight: bold; color: var(--primary); }
+        .message-mine .msg-author { color: var(--success); }
+
+        /* Botón de Escucha Activa (Comunicación Efectiva) */
+        .btn-escucha-activa {
+            display: inline-block;
+            margin-top: 10px;
+            font-size: 11px;
+            color: #fff;
+            background-color: var(--success);
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .btn-escucha-activa:hover { opacity: 0.8; }
+
+        .acuses-list {
+            margin-top: 8px;
+            font-size: 11px;
+            color: var(--text-muted);
+            border-top: 1px dashed var(--border);
+            padding-top: 6px;
+        }
+
+        /* Formulario de Envío */
+        .chat-input-area {
+            padding: 20px 30px;
+            background-color: var(--bg-card);
+            border-top: 1px solid var(--border);
+        }
+
+        .chat-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-form input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: white;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        .chat-form button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .chat-form button:hover { background-color: var(--primary-dark); }
+    </style>
 </head>
 <body>
-$END$
+
+    <header class="chat-header">
+        <div>
+            <h2 style="margin: 0;">#{{ canal.nombre }}</h2>
+            <small style="color: var(--text-muted);">{{ canal.descripcion }}</small>
+        </div>
+        <div>
+            <span class="context-badge">{{ canal.get_tipo_contexto_display }}</span>
+            <a href="{% url 'dashboard_principal' %}" class="back-btn" style="margin-left: 15px;">⬅ Volver al Dashboard</a>
+        </div>
+    </header>
+
+    <div class="chat-messages" id="messages-container">
+        {% for msg in mensajes %}
+            <div class="message-card {% if msg.emisor == dispositivo_actual %}message-mine{% endif %}">
+                <div class="msg-header">
+                    <span class="msg-author">{{ msg.emisor.nombre_asignado }}</span>
+                    <span>{{ msg.fecha_envio|date:"H:i - d M" }}</span>
+                </div>
+                <div class="msg-body">
+                    {{ msg.contenido }}
+                </div>
+
+                <!-- Aplicación Práctica: Escucha Activa solo en Contextos Formales -->
+                {% if canal.tipo_contexto == 'FORMAL' %}
+                    {% if msg.emisor != dispositivo_actual %}
+                        <!-- Botón para confirmar acuse de recibo analítico -->
+                        <a href="{% url 'acuse_escucha_activa' msg.id %}" class="btn-escucha-activa">✓ Entendido (Acuse)</a>
+                    {% endif %}
+
+                    <!-- Registro visual de retroalimentación -->
+                    {% if msg.acuses_escucha.all %}
+                        <div class="acuses-list">
+                            <strong>Acuses de lectura:</strong>
+                            {% for acuse in msg.acuses_escucha.all %}
+                                {{ acuse.dispositivo_receptor.nombre_asignado }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        {% empty %}
+            <div style="text-align: center; color: var(--text-muted); margin-top: 50px;">
+                <p>No hay mensajes en este canal. Rompe el hielo e inicia la comunicación.</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="chat-input-area">
+        <form class="chat-form" method="POST">
+            {% csrf_token %}
+            <input type="text" name="contenido" placeholder="Escribe un mensaje en el contexto {{ canal.tipo_contexto|lower }}..." required autocomplete="off" autofocus>
+            <button type="submit">Enviar</button>
+        </form>
+    </div>
+
+    <script>
+        // Auto-scroll al último mensaje al cargar la página
+        const container = document.getElementById('messages-container');
+        container.scrollTop = container.scrollHeight;
+    </script>
 </body>
 </html>

@@ -1,10 +1,215 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mensaje Efectivo — Panel de Comunicación Local</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e3a8a;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --accent: #10b981;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar de Navegación y Dispositivos */
+        .sidebar {
+            width: 320px;
+            background-color: var(--bg-card);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .brand-header {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .device-card {
+            background-color: rgba(37, 99, 235, 0.1);
+            border: 1px solid var(--primary);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .device-card input[type="text"] {
+            width: 100%;
+            padding: 6px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: #fff;
+            border-radius: 4px;
+            margin-top: 6px;
+            box-sizing: border-box;
+        }
+
+        .section-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .channel-list, .device-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 15px 0;
+        }
+
+        .channel-item a, .device-item a {
+            display: block;
+            padding: 10px;
+            color: var(--text-light);
+            text-decoration: none;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .channel-item a:hover, .device-item a:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .badge-formal {
+            background-color: #3b82f6;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .badge-informal {
+            background-color: #f59e0b;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* Área Principal de Contenido */
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .welcome-hero {
+            background: linear-gradient(135deg, #1e3a8a, #0f172a);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+
+        .welcome-hero h1 {
+            margin-top: 0;
+            color: #fff;
+        }
+    </style>
 </head>
 <body>
-$END$
+
+    <!-- BARRA LATERAL: DISPOSITIVO E IDENTIFICADORES LOCALES -->
+    <div class="sidebar">
+        <div class="brand-header">
+            💬 Mensaje Efectivo
+        </div>
+
+        <!-- Identificador del Dispositivo Actual -->
+        <div class="device-card">
+            <small style="color: var(--text-muted);">Tu Dispositivo Local:</small>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="text" name="nombre_asignado" value="{{ dispositivo_actual.nombre_asignado }}">
+                <input type="hidden" name="actualizar_nombre" value="1">
+                <button type="submit" style="margin-top: 6px; width: 100%; background: var(--primary); color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer;">Guardar Nombre</button>
+            </form>
+            <small style="font-size: 9px; color: var(--text-muted); display: block; margin-top: 4px;">
+                UUID: {{ dispositivo_actual.uuid_dispositivo|slice:":12" }}...
+            </small>
+        </div>
+
+        <!-- Canales Grupales Formales -->
+        <div class="section-title">Canales Formales (Trabajo)</div>
+        <ul class="channel-list">
+            {% for c in canales_formales %}
+            <li class="channel-item">
+                <a href="{% url 'sala_canal_grupal' c.id %}">
+                    📌 #{{ c.nombre }} <span class="badge-formal">Formal</span>
+                </a>
+            </li>
+            {% empty %}
+            <li style="color: var(--text-muted); font-size: 12px;">Sin canales formales</li>
+            {% endfor %}
+        </ul>
+
+        <!-- Canales Grupales Informales -->
+        <div class="section-title">Canales Informales (Familia/Amigos)</div>
+        <ul class="channel-list">
+            {% for c in canales_informales %}
+            <li class="channel-item">
+                <a href="{% url 'sala_canal_grupal' c.id %}">
+                    ☕ #{{ c.nombre }} <span class="badge-informal">Informal</span>
+                </a>
+            </li>
+            {% empty %}
+            <li style="color: var(--text-muted); font-size: 12px;">Sin canales informales</li>
+            {% endfor %}
+        </ul>
+
+        <!-- Dispositivos Detectados para Chats Privados -->
+        <div class="section-title">Chats Privados (1 a 1)</div>
+        <ul class="device-list">
+            {% for dev in otros_dispositivos %}
+            <li class="device-item">
+                <a href="{% url 'chat_privado_individual' dev.id %}">
+                    💻 {{ dev.nombre_asignado }}
+                </a>
+            </li>
+            {% empty %}
+            <li style="color: var(--text-muted); font-size: 12px;">Buscando otros nodos en LAN...</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- ÁREA PRINCIPAL -->
+    <div class="main-content">
+        <div class="welcome-hero">
+            <h1>Bienvenido a Mensaje Efectivo</h1>
+            <p>
+                Plataforma local diseñada para erradicar el ruido comunicativo mediante la asignación de identificadores unívocos por dispositivo, chats individuales directos y canales clasificados formal e informalmente.
+            </p>
+        </div>
+
+        <div style="background-color: var(--bg-card); padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
+            <h3>Principios de Comunicación Aplicados:</h3>
+            <ul>
+                <li><strong>Identificador de Dispositivo:</strong> Cada terminal en la red posee un UUID único para atribución clara de mensajes.</li>
+                <li><strong>Escucha Activa:</strong> Presiona "✓ Entendido" en los mensajes grupales formales para dar acuse analítico de recepción.</li>
+                <li><strong>Segregación de Contextos:</strong> Mantén los temas de proyectos en canales Formales y las interacciones sociales en Informales.</li>
+            </ul>
+        </div>
+    </div>
+
 </body>
 </html>

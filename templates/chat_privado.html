@@ -1,10 +1,196 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Privado | Mensaje Efectivo</title>
+    <style>
+        /* Reutilizamos el esquema base de colores para mantener coherencia */
+        :root {
+            --primary: #10b981; /* Verde esmeralda para chats privados */
+            --primary-dark: #059669;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Cabecera del Chat Privado */
+        .chat-header {
+            background-color: var(--bg-card);
+            padding: 15px 30px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 0 5px var(--primary);
+        }
+
+        .back-btn {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover { background-color: var(--border); color: #fff; }
+
+        /* Área de Mensajes 1 a 1 */
+        .chat-messages {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Diseño de Burbujas de Chat (Estilo mensajería moderna) */
+        .bubble {
+            max-width: 60%;
+            padding: 12px 18px;
+            border-radius: 18px;
+            position: relative;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .bubble-received {
+            align-self: flex-start;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 4px;
+        }
+
+        .bubble-sent {
+            align-self: flex-end;
+            background-color: var(--primary);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .msg-time {
+            font-size: 10px;
+            opacity: 0.7;
+            display: block;
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        /* Formulario de Envío */
+        .chat-input-area {
+            padding: 20px 30px;
+            background-color: var(--bg-card);
+            border-top: 1px solid var(--border);
+        }
+
+        .chat-form { display: flex; gap: 10px; }
+
+        .chat-form input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: white;
+            border-radius: 20px;
+            outline: none;
+            padding-left: 20px;
+        }
+
+        .chat-form button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 25px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .chat-form button:hover { background-color: var(--primary-dark); }
+    </style>
 </head>
 <body>
-$END$
+
+    <header class="chat-header">
+        <div class="header-title">
+            <div class="status-dot"></div>
+            <div>
+                <h2 style="margin: 0; font-size: 18px;">{{ dispositivo_destino.nombre_asignado }}</h2>
+                <small style="color: var(--text-muted);">UUID: {{ dispositivo_destino.uuid_dispositivo|slice:":8" }}...</small>
+            </div>
+        </div>
+        <div>
+            <a href="{% url 'dashboard_principal' %}" class="back-btn">⬅ Volver al Dashboard</a>
+        </div>
+    </header>
+
+    <div class="chat-messages" id="messages-container">
+        <!-- Aviso de Privacidad y Retroalimentación -->
+        <div style="text-align: center; color: var(--text-muted); font-size: 12px; margin-bottom: 20px;">
+            🔒 Conversación cifrada de extremo a extremo en la red local.<br>
+            <em>Utiliza este espacio para resolver dudas técnicas directas o dar retroalimentación constructiva.</em>
+        </div>
+
+        {% for msg in mensajes %}
+            {% if msg.emisor == dispositivo_emisor %}
+                <!-- Burbuja de mensaje enviado por mí -->
+                <div class="bubble bubble-sent">
+                    {{ msg.contenido }}
+                    <span class="msg-time">{{ msg.fecha_envio|date:"H:i" }}</span>
+                </div>
+            {% else %}
+                <!-- Burbuja de mensaje recibido del otro dispositivo -->
+                <div class="bubble bubble-received">
+                    {{ msg.contenido }}
+                    <span class="msg-time">{{ msg.fecha_envio|date:"H:i" }}</span>
+                </div>
+            {% endif %}
+        {% empty %}
+            <div style="text-align: center; color: var(--text-muted); margin-top: 30px;">
+                No hay historial de mensajes con {{ dispositivo_destino.nombre_asignado }}.
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="chat-input-area">
+        <form class="chat-form" method="POST">
+            {% csrf_token %}
+            <input type="text" name="contenido" placeholder="Escribe un mensaje directo a {{ dispositivo_destino.nombre_asignado }}..." required autocomplete="off" autofocus>
+            <button type="submit">Enviar</button>
+        </form>
+    </div>
+
+    <script>
+        // Mantiene el scroll siempre abajo para simular app de mensajería real
+        const container = document.getElementById('messages-container');
+        container.scrollTop = container.scrollHeight;
+    </script>
 </body>
 </html>
